@@ -4,7 +4,7 @@ import View from './image-display.view.svelte';
 export class ImageDisplay extends Component {
   constructor({ imageArray = [] } = {}) {
     super();
-    this.title = 'Original Image [Custom Component ]';
+    this.title = 'Original Image';
     this.imageArray = imageArray;
   }
 
