@@ -3,6 +3,8 @@
 
   export let imageArray = [];
   export let threshold = 128;
+  export let contrast = 1;
+  export let brightness = 0;
 
   let canvas;
   let context;
@@ -16,6 +18,8 @@
     if (!context || !imageArray.length) return;
 
     console.log("Drawing with threshold:", threshold);
+    console.log("Drawing with contrast:", contrast);
+    console.log("Drawing with brightness:", brightness);
 
     const width = Math.sqrt(imageArray.length);
     const height = width;
@@ -35,6 +39,15 @@
       // Apply thresholding with smoother transition
       value = value > threshold ? 0 : 255;
 
+      // Apply contrast
+      value = (value - 128) * contrast + 128;
+
+      // Apply brightness
+      value = value + (255 * (brightness - 1));
+
+      // Keep value in valid range [0, 255]
+      value = Math.max(0, Math.min(255, value));
+
       imageData.data[i * 4] = value;     // Red
       imageData.data[i * 4 + 1] = value; // Green
       imageData.data[i * 4 + 2] = value; // Blue
@@ -53,7 +66,7 @@
     context.drawImage(offscreenCanvas, 0, 0, width * scale, height * scale);
   }
 
-  $: if (imageArray && threshold !== undefined) {
+  $: if (imageArray && threshold && contrast && brightness !== undefined) {
     drawImage();
   };
 </script>
