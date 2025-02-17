@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "target": "es6",
+      "module": "esnext",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "moduleResolution": "node",
+      "resolveJsonModule": true,
+      "isolatedModules": true,
+      "jsx": "preserve",
+      "allowJs": true,
+      "checkJs": true,
+      "noEmit": true
+    },
+    "include": ["src/**/*", "types/**/*"],
+    "exclude": ["node_modules"]
+  }

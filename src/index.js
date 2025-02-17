@@ -3,11 +3,13 @@ import { dashboard, text, imageUpload, imageDisplay } from '@marcellejs/core';
 import { Slider } from './components';
 import { ContrastSlider } from './components/contrastslider';
 import { BrightnessSlider } from './components/brightnessslider';
+import { brush } from './components/brush'; 
 import { imageOutput } from './components/image-output';
 import { heatmap } from './components/heatmap';
 // import { imageDisplay } from './components/image-display';
 
-const x = text('hello :3');
+const x = text('In our platform, you can upload a PET scan image and segment the image using the brush tool. You can also adjust the threshold, contrast, and brightness of the image.');
+x.title = "introduction";
 
 const upload = imageUpload();
 let imageArray = [];
@@ -20,7 +22,7 @@ const org_img = imageDisplay(upload.$images)
 const imageComponent = new imageOutput({ imageArray: exampleImage, threshold: 0.1, contrast: 1, brightness: 0.7 });
 console.log("imageComponent:", imageComponent);
 //console.log(imageComponent.element);  
-  
+   
 
 
 const heatmapy = new heatmap({ imageArray: exampleImage, width: 100, height: 100 });
@@ -54,17 +56,18 @@ const contrastSliderComponent = new ContrastSlider({
     initialValue: 0.7,
     onChange: (val) => {
       console.log("Brightness value:", val);
-      imageComponent.updateContrast(val); 
+      imageComponent.updateBrightness(val); 
     },
   });
 
+  const brushComponent = new brush(upload.$images);
 
 const dash = dashboard({
-  title: 'My Marcelle App!',
+  title: 'PET Scan Segmentation',
   author: 'Marcelle Doe'
 });
 
-dash.page('Welcome').use(x, sliderComponent, imageComponent, contrastSliderComponent, brightnessSliderComponent).sidebar(upload, org_img);
+dash.page('Welcome').use(x, [imageComponent, sliderComponent, contrastSliderComponent, brightnessSliderComponent]).sidebar(upload, org_img, brushComponent);
 dash.page('Heatmap').use(heatmapy);
 
 dash.show();

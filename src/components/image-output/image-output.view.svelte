@@ -1,10 +1,14 @@
 <script>
   import { onMount } from 'svelte';
+  import { ViewContainer } from '@marcellejs/design-system';
+
 
   export let imageArray = [];
   export let threshold = 128;
   export let contrast = 1;
   export let brightness = 0;
+
+  export let title;
 
   let canvas;
   let context;
@@ -70,8 +74,10 @@
     drawImage();
   };
 </script>
-
+<ViewContainer {title}>
 <canvas bind:this={canvas} style="width: 300px; height: 400px;"></canvas>
+
+</ViewContainer>
 
 <style>
   canvas {

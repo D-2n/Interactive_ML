@@ -4,7 +4,7 @@ import View from './contratslider.view.svelte';
 export class ContrastSlider extends Component {
   constructor(options = {}) {
     super();
-    this.title = 'Segmentation contrast slider';
+    this.title = 'Image Contrast';
     this.options = options;
   }
 

@@ -8,6 +8,7 @@ export class ImageOutput extends Component {
     this.threshold = threshold;
     this.contrast = contrast;
     this.brightness = brightness;
+    this.title = "output image";
   }
 
   updateThreshold(newThreshold) {
@@ -21,7 +22,7 @@ export class ImageOutput extends Component {
   }
 
   updateBrightness(newBrightness) {
-    this.contrast = newBrightness;
+    this.brightness = newBrightness;
     this.$$.app.$set({ brightness: this.brightness });
   }
   
@@ -33,6 +34,7 @@ export class ImageOutput extends Component {
     this.$$.app = new View({
       target: t,
       props: {
+        title: this.title,
         imageArray: this.imageArray,
         threshold: this.threshold,
         contrast: this.contrast,

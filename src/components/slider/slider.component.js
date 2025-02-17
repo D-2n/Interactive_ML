@@ -4,7 +4,7 @@ import View from './slider.view.svelte';
 export class Slider extends Component {
   constructor(options = {}) {
     super();
-    this.title = 'Segmentation threshold slider';
+    this.title = 'Segmentation Threshold';
     this.options = options;
   }
 

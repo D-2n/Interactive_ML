@@ -4,7 +4,7 @@ import View from './brightnessslider.view.svelte';
 export class BrightnessSlider extends Component {
   constructor(options = {}) {
     super();
-    this.title = 'Segmentation brightness slider';
+    this.title = 'Image Brightness';
     this.options = options;
   }
 

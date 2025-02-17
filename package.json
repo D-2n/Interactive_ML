@@ -28,7 +28,8 @@
     "eslint-plugin-svelte3": "^4.0.0",
     "prettier": "^2.7.1",
     "svelte": "^3.55.1",
-    "svelte-preprocess": "^5.0.1",
+    "svelte-preprocess": "^5.1.4",
+    "typescript": "^5.7.3",
     "vite": "^4.1.4"
   }
 }

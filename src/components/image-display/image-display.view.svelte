@@ -3,6 +3,7 @@
 
   export let title = 'Original Image Component';
   export let imageArray = null; // Store image as a full object
+  import { ViewContainer } from '@marcellejs/design-system';
 
   let canvas;
   let context;
@@ -34,9 +35,10 @@
     drawImage();
   }
 </script>
-
-<h3>{title}</h3>
+<ViewContainer {title}>
 <canvas bind:this={canvas}></canvas>
+
+</ViewContainer>
 
 <style>
   canvas {
