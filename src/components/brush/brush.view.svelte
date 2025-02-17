@@ -4,13 +4,13 @@
   import { ViewContainer } from '@marcellejs/design-system';
   import { Button } from '@marcellejs/design-system';
 
-
-
   export let title: string;
   export let imageStream: Stream<ImageData> | Stream<ImageData[]>;
 
   let imageCanvas: HTMLCanvasElement;
   let imageCtx: CanvasRenderingContext2D;
+  let drawCanvas: HTMLCanvasElement;  // Extra canvas for drawing
+  let drawCtx: CanvasRenderingContext2D;  // Context for extra canvas
 
   let isDrawing = false;
   let previous = { x: 0, y: 0 };
@@ -18,9 +18,9 @@
 
   const dispatch = createEventDispatcher();
 
-  // Setup drawing event listeners
-  function startDrawing(e: MouseEvent) {
-    const rect = imageCanvas.getBoundingClientRect();
+  // Setup drawing event listeners for both canvases
+  function startDrawing(e: MouseEvent, canvas: HTMLCanvasElement) {
+    const rect = canvas.getBoundingClientRect();
     offset = {
       left: rect.left + window.scrollX,
       top: rect.top + window.scrollY
@@ -36,28 +36,26 @@
     }
   }
 
-  function draw(e: MouseEvent) {
+  function draw(e: MouseEvent, ctx: CanvasRenderingContext2D) {
     if (!isDrawing) return;
     const x = e.clientX - offset.left;
     const y = e.clientY - offset.top;
-    imageCtx.beginPath();
-    imageCtx.moveTo(previous.x, previous.y);
-    imageCtx.lineTo(x, y);
-    imageCtx.strokeStyle = 'red';
-    imageCtx.lineWidth = 4;
-    imageCtx.lineJoin = 'round';
-    imageCtx.closePath();
-    imageCtx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(previous.x, previous.y);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.closePath();
+    ctx.stroke();
     previous.x = x;
     previous.y = y;
   }
 
-  function clearDrawing() {
-    imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-    
+  function clearDrawing(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     isDrawing = false;
   }
-
 
   onMount(async () => {
     await tick();
@@ -65,14 +63,21 @@
     
     // Set up the canvases once they are bound
     imageCtx = imageCanvas.getContext('2d');
+    drawCtx = drawCanvas.getContext('2d');
 
     // Listen for the imageStream updates
     imageStream.subscribe((img: ImageData | ImageData[]) => {
       if (img instanceof ImageData) {
-        clearDrawing();
+        clearDrawing(imageCanvas, imageCtx);
+
+        // Set the imageCanvas size based on the image's original size
         imageCanvas.width = img.width;
         imageCanvas.height = img.height;
-        
+
+        // Set the drawCanvas size to match the imageCanvas size
+        drawCanvas.width = img.width;
+        drawCanvas.height = img.height;
+
         imageCtx.putImageData(img, 0, 0);
       } else if (Array.isArray(img)) {
         // Handle multiple images case if needed
@@ -86,17 +91,22 @@
     <!-- Bottom Canvas (image display) -->
     <canvas
       bind:this={imageCanvas}
-      class="w-full max-w-full"
-      style="z-index: 1; cursor: crosshair;"
-      on:mousemove={draw}
-      on:mousedown={startDrawing}
+      style="z-index: 1;"
+    />
+    
+    <!-- Extra Drawing Canvas -->
+    <canvas
+      bind:this={drawCanvas}
+      class="absolute top-0 left-0"
+      style="z-index: 2; cursor: crosshair;"
+      on:mousemove={(e) => draw(e, drawCtx)}  
+      on:mousedown={(e) => startDrawing(e, drawCanvas)}
       on:mouseup={stopDrawing}
       on:mouseleave={stopDrawing}
     />
+    
     <div class="m-1 z-3">
-      <Button size="small" type="danger" on:click={clearDrawing}>Clear</Button>
+      <Button size="small" type="danger" on:click={() => clearDrawing(drawCanvas, drawCtx)}>Clear Drawing Canvas</Button>
     </div>
   </div>
 </ViewContainer>
-
-

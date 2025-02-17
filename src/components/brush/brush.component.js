@@ -9,6 +9,8 @@ export class Brush extends Component {
   #thumbnailCanvasHeight;
   #thumbnailCtx;
   #sketchCtx;
+  #drawCanvas;  // New drawing canvas
+  #drawCtx;     // Drawing context for the new canvas
   sketchElement;
 
   constructor(imageStream) {
@@ -27,6 +29,13 @@ export class Brush extends Component {
     this.#thumbnailCanvasWidth = imageStream.width;
     this.#thumbnailCanvasHeight = imageStream.height;
     this.#thumbnailCtx = this.#thumbnailCanvas.getContext('2d');
+
+    // Set up the new drawing canvas
+    this.#drawCanvas = document.createElement('canvas');
+    this.#drawCanvas.width = this.#thumbnailCanvasWidth;
+    this.#drawCanvas.height = this.#thumbnailCanvasHeight;
+    this.#drawCtx = this.#drawCanvas.getContext('2d');
+
     this.setupCapture();
 
     // Subscribe to the strokeEnd stream to capture the image
@@ -89,5 +98,25 @@ export class Brush extends Component {
   // Capture the full image from the sketch
   captureImage() {
     return this.#sketchCtx.getImageData(0, 0, this.sketchElement.width, this.sketchElement.height);
+  }
+
+  // New method to draw on the new #drawCanvas
+  startDrawingOnDrawCanvas(e) {
+    // For example, handle mouse events for drawing
+    const rect = this.#drawCanvas.getBoundingClientRect();
+    const offset = {
+      left: rect.left + window.scrollX,
+      top: rect.top + window.scrollY
+    };
+
+    const x = e.clientX - offset.left;
+    const y = e.clientY - offset.top;
+    this.#drawCtx.beginPath();
+    this.#drawCtx.moveTo(x, y);
+    this.#drawCtx.strokeStyle = 'red';
+    this.#drawCtx.lineWidth = 4;
+    this.#drawCtx.lineJoin = 'round';
+    this.#drawCtx.closePath();
+    this.#drawCtx.stroke();
   }
 }

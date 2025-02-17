@@ -67,7 +67,7 @@ const dash = dashboard({
   author: 'Marcelle Doe'
 });
 
-dash.page('Welcome').use(x, [imageComponent, sliderComponent, contrastSliderComponent, brightnessSliderComponent]).sidebar(upload, org_img, brushComponent);
+dash.page('Welcome').use(x, [imageComponent, sliderComponent, contrastSliderComponent, brightnessSliderComponent], brushComponent).sidebar(upload, org_img);
 dash.page('Heatmap').use(heatmapy);
 
 dash.show();
