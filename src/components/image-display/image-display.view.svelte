@@ -1,47 +1,101 @@
-<script>
-  import { onMount } from 'svelte';
+<svelte:options accessors />
 
-  export let title = 'Original Image Component';
-  export let imageArray = null; // Store image as a full object
+<script lang="ts">
+  import type { Stream } from '../../core/stream';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { ViewContainer } from '@marcellejs/design-system';
 
-  let canvas;
-  let context;
-  let img = new Image();
+  export let title: string;
+  export let imageStream: Stream<ImageData> | Stream<ImageData[]>;
+  export let brightness: number = 1; // External brightness value
+  export let contrast: number = 1; // External contrast value
 
-  onMount(() => {
-    context = canvas.getContext('2d');
-    if (imageArray) drawImage();
+  let canvas: HTMLCanvasElement;
+
+  function noop() {
+    // Do nothing
+  }
+
+  let unSub = noop;
+  let currentImage: ImageData | null = null;
+
+  // Function to apply brightness and contrast to an ImageData object
+  function applyBrightnessContrast(imageData: ImageData, brightness: number, contrast: number): ImageData {
+    console.log('Applying brightness and contrast:', { brightness, contrast });
+    // Clone the ImageData to avoid modifying the original
+    const clonedData = new ImageData(
+      new Uint8ClampedArray(imageData.data),
+      imageData.width,
+      imageData.height
+    );
+    const data = clonedData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      // Apply brightness and contrast
+      for (let j = 0; j < 3; j++) { // Loop through RGB channels
+        data[i + j] = Math.min(255, Math.max(0, contrast * (data[i + j] * brightness - 128) + 128));
+      }
+    }
+
+    return clonedData;
+  }
+
+  // Function to render the image with brightness and contrast adjustments
+  function renderImage() {
+    console.log('Rendering image with current settings:', { brightness, contrast });
+    if (canvas && currentImage) {
+      const ctx = canvas.getContext('2d');
+      const adjustedImageData = applyBrightnessContrast(currentImage, brightness, contrast);
+      ctx.putImageData(adjustedImageData, 0, 0); // Use putImageData instead of drawImage
+    }
+  }
+
+  onMount(async () => {
+    await tick();
+    await tick();
+    const ctx = canvas.getContext('2d');
+    console.log('Canvas context initialized:', ctx);
+
+    // Subscribe to the imageStream
+    unSub = imageStream.subscribe((img: ImageData | ImageData[]) => {
+      console.log('Received new image from stream:', img);
+      if (Array.isArray(img) && img.length === 0) return;
+
+      if (img instanceof ImageData) {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        currentImage = img; // Store the current image
+        renderImage(); // Render the image with adjustments
+      } else if (Array.isArray(img)) {
+        throw new Error('This component does not yet support multiple images');
+      }
+    });
   });
 
-  function drawImage() {
-    if (!context || !imageArray) return;
+  onDestroy(() => {
+    console.log('Component destroyed, unsubscribing from image stream');
+    unSub();
+  });
 
-    console.log("Drawing Original Image...");
-
-    img.src = URL.createObjectURL(imageArray); // Set image source
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      canvas.style.width = "300px";
-      canvas.style.height = "400px";
-
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(img, 0, 0, img.width, img.height);
-    };
-  }
-
-  $: if (imageArray) {
-    drawImage();
+  // Watch for changes in brightness and contrast
+  $: {
+    console.log('Reactive statement triggered:', { brightness, contrast });
+    if (currentImage) {
+      console.log('Brightness or contrast changed, re-rendering image');
+      renderImage(); // Re-render the image whenever brightness or contrast changes
+    }
   }
 </script>
-<ViewContainer {title}>
-<canvas bind:this={canvas}></canvas>
 
+<ViewContainer {title}>
+  <canvas bind:this={canvas} class="w-full max-w-full" />
 </ViewContainer>
 
 <style>
-  canvas {
-    border: 1px solid black;
+  .slider-container {
+    margin-bottom: 1rem;
+  }
+  input[type="range"] {
+    width: 100%;
   }
 </style>

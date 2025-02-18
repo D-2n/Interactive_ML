@@ -1,3 +1,5 @@
+<svelte:options accessors />
+
 <script lang="ts">
   import { onMount, tick, createEventDispatcher } from 'svelte';
   import { Stream } from '@marcellejs/core';
@@ -5,6 +7,8 @@
   import { Button } from '@marcellejs/design-system';
 
   export let title: string;
+  export let strokeStart: any;
+  export let strokeEnd: any;
   export let imageStream: Stream<ImageData> | Stream<ImageData[]>;
 
   let imageCanvas: HTMLCanvasElement;
@@ -28,11 +32,13 @@
     isDrawing = true;
     previous.x = e.clientX - offset.left;
     previous.y = e.clientY - offset.top;
+    strokeStart.set();
   }
 
   function stopDrawing() {
     if (isDrawing) {
       isDrawing = false;
+      strokeEnd.set();
     }
   }
 
@@ -53,6 +59,10 @@
   }
 
   function clearDrawing(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+    if (!canvas || !ctx) {
+      console.error('Canvas or context is not initialized:', { canvas, ctx });
+      return;
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     isDrawing = false;
   }
@@ -83,6 +93,8 @@
         // Handle multiple images case if needed
       }
     });
+
+    dispatch('canvasElement', drawCanvas);
   });
 </script>
 
@@ -110,3 +122,12 @@
     </div>
   </div>
 </ViewContainer>
+
+<style>
+  .slider-container {
+    margin-bottom: 1rem;
+  }
+  input[type="range"] {
+    width: 100%;
+  }
+</style>
