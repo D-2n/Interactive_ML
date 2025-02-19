@@ -54,7 +54,6 @@
     await tick();
     await tick();
     const ctx = canvas.getContext('2d');
-    console.log('Canvas context initialized:', ctx);
 
     // Subscribe to the imageStream
     unSub = imageStream.subscribe((img: ImageData | ImageData[]) => {
@@ -73,7 +72,7 @@
   });
 
   onDestroy(() => {
-    console.log('Component destroyed, unsubscribing from image stream');
+    console.log('Image Display component destroyed, unsubscribing from image stream');
     unSub();
   });
 

@@ -1,7 +1,7 @@
 <svelte:options accessors />
 
 <script lang="ts">
-  import { onMount, tick, createEventDispatcher } from 'svelte';
+  import { onDestroy, onMount, tick, createEventDispatcher } from 'svelte';
   import { Stream } from '@marcellejs/core';
   import { ViewContainer } from '@marcellejs/design-system';
   import { Button } from '@marcellejs/design-system';
@@ -21,6 +21,12 @@
   let offset = { left: 0, top: 0 };
 
   const dispatch = createEventDispatcher();
+
+    function noop() {
+    // Do nothing
+  }
+
+  let unSub = noop;
 
   // Setup drawing event listeners for both canvases
   function startDrawing(e: MouseEvent, canvas: HTMLCanvasElement) {
@@ -59,10 +65,6 @@
   }
 
   function clearDrawing(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
-    if (!canvas || !ctx) {
-      console.error('Canvas or context is not initialized:', { canvas, ctx });
-      return;
-    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     isDrawing = false;
   }
@@ -73,13 +75,18 @@
     
     // Set up the canvases once they are bound
     imageCtx = imageCanvas.getContext('2d');
+    console.log('imageCanvas context initialized:', imageCtx);
     drawCtx = drawCanvas.getContext('2d');
+    console.log('drawCanvas context initialized:', drawCtx);
+
+    
 
     // Listen for the imageStream updates
-    imageStream.subscribe((img: ImageData | ImageData[]) => {
-      if (img instanceof ImageData) {
-        clearDrawing(imageCanvas, imageCtx);
+    unSub = imageStream.subscribe((img: ImageData | ImageData[]) => {
 
+      if (Array.isArray(img) && img.length === 0) return;
+      if (img instanceof ImageData) {
+        
         // Set the imageCanvas size based on the image's original size
         imageCanvas.width = img.width;
         imageCanvas.height = img.height;
@@ -87,6 +94,7 @@
         // Set the drawCanvas size to match the imageCanvas size
         drawCanvas.width = img.width;
         drawCanvas.height = img.height;
+        clearDrawing(imageCanvas, imageCtx);
 
         imageCtx.putImageData(img, 0, 0);
       } else if (Array.isArray(img)) {
@@ -95,6 +103,10 @@
     });
 
     dispatch('canvasElement', drawCanvas);
+  });
+   onDestroy(() => {
+    console.log('Brush Component destroyed, unsubscribing from image stream');
+    unSub();
   });
 </script>
 
