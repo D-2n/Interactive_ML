@@ -1,34 +1,126 @@
 import '@marcellejs/core/dist/marcelle.css';
-import { dashboard, text, imageUpload, imageDisplay} from '@marcellejs/core';
+import { dashboard, text, imageUpload, imageDisplay, tfjsModel } from '@marcellejs/core';
 import { Slider } from './components';
-import { ContrastSlider } from './components/contrastslider';
-import { BrightnessSlider } from './components/brightnessslider';
-import { brush } from './components/brush'; 
 import { imageOutput } from './components/image-output';
 import { heatmap } from './components/heatmap';
-import { ScanDisplay } from './components/image-display';
-
-const upload_text = text('Upload a PET scan image and you can also adjust the contrast, and brightness of the image.');
-upload_text.title = "step one";
-
-const prediction_text = text("Here is the segmentation result. You can segment the image yourself using the brush tool, and adjust the segmentation threshold of the result.");
-prediction_text.title = "view and adjust"
+// import { imageDisplay } from './components/image-display';
+import * as tf from '@tensorflow/tfjs'; 
+const x = text('hello :3');
 
 const upload = imageUpload();
 let imageArray = [];
 const exampleImage = new Array(100000).fill(0).map(() => Math.random());
 
+const unet = tfjsModel({
+  inputType: 'generic',
+  taskType: 'segmentation',
+});
+const modelFiles = [
+  'tfjs_model/model.json',
+  'tfjs_model/group1-shard1of30.bin',
+  'tfjs_model/group1-shard2of30.bin',
+  'tfjs_model/group1-shard3of30.bin',
+  'tfjs_model/group1-shard4of30.bin',
+  'tfjs_model/group1-shard5of30.bin',
+  'tfjs_model/group1-shard6of30.bin',
+  'tfjs_model/group1-shard7of30.bin',
+  'tfjs_model/group1-shard8of30.bin',
+  'tfjs_model/group1-shard9of30.bin',
+  'tfjs_model/group1-shard10of30.bin',
+  'tfjs_model/group1-shard11of30.bin',
+  'tfjs_model/group1-shard12of30.bin',
+  'tfjs_model/group1-shard13of30.bin',
+  'tfjs_model/group1-shard14of30.bin',
+  'tfjs_model/group1-shard15of30.bin',
+  'tfjs_model/group1-shard16of30.bin',
+  'tfjs_model/group1-shard17of30.bin',
+  'tfjs_model/group1-shard18of30.bin',
+  'tfjs_model/group1-shard19of30.bin',
+  'tfjs_model/group1-shard20of30.bin',
+  'tfjs_model/group1-shard21of30.bin',
+  'tfjs_model/group1-shard22of30.bin',
+  'tfjs_model/group1-shard23of30.bin',
+  'tfjs_model/group1-shard24of30.bin',
+  'tfjs_model/group1-shard25of30.bin',
+  'tfjs_model/group1-shard26of30.bin',
+  'tfjs_model/group1-shard27of30.bin',
+  'tfjs_model/group1-shard28of30.bin',
+  'tfjs_model/group1-shard29of30.bin',
+  'tfjs_model/group1-shard30of30.bin'
+];
 
+const fetchFile = async (url) => {
+  const response = await fetch(url);
+  const data = await response.blob();
+  return new File([data], url.split('/').pop(), { type: data.type });
+};
+
+Promise.all(modelFiles.map(fetchFile)).then(files => {
+  unet.loadFromFiles(files).then(() => {
+    console.log('Model loaded successfully');
+  }).catch(error => {
+    console.error('Error loading model:', error);
+  });
+});
+const tensorToImageData = async (tensor) => {
+  const [height, width] = tensor.shape.slice(0, 2);
+  const imageDataArray = await tf.browser.toPixels(tensor);
+  const imageData = new ImageData(new Uint8ClampedArray(imageDataArray), width, height);
+  return imageData;
+};
+
+const toGrayscale = (image) => {
+  return tf.tidy(() => {
+    console.log('Image type:', image.constructor.name); // Log the image type
+    let tensor;
+    if (image instanceof tf.Tensor) {
+      tensor = image;
+    } else if (image instanceof ImageData) {
+      tensor = tf.browser.fromPixels(image);
+      console.log('Is image data man')
+    } else {
+      throw new Error('Unsupported image type');
+    }
+    const grayscaleTensor = tensor.mean(2).expandDims(2);
+    return grayscaleTensor;
+  });
+};
+
+
+const predictionStream = upload.$images.map(async (image) => {
+  //const resizedImage = resizeImage(image);
+  const grayscaleImage = toGrayscale(image);
+  const normalizedImage = grayscaleImage.div(255); // Normalize the tensor values to [0, 1]
+  const resizedImage = tf.image.resizeBilinear(normalizedImage, [256, 256]);
+  // Ensure the tensor has the correct shape [1, 256, 256, 1]
+  //const reshapedImage = normalizedImage.reshape([1, 256, 256, 1]);
+ 
+  //const imageData = await tensorToImageData(normalizedImage);
+  let prediction = null;
+  try{
+    prediction = await unet.predict(resizedImage.arraySync());
+  }
+  catch(err){
+    console.log('Unet is being a baby: ', err);
+  }
+  grayscaleImage.dispose();
+  normalizedImage.dispose();
+  //reshapedImage.dispose();
+  return prediction;
+}).awaitPromises();
+
+
+
+//const predictionStream = upload.$images.map(unet.predict).awaitPromises();
 //const org_img = new imageDisplay({ imageArray});
-const org_img = ScanDisplay(upload.$images)
+const org_img = imageDisplay(upload.$images);
+const pred_img = imageDisplay(predictionStream);
 
-const imageComponent = new imageOutput({ imageArray: exampleImage, threshold: 0.1});
-console.log("imageComponent:", imageComponent);
-//console.log(imageComponent.element);  
-   
+  
 
+const imageComponent =  imageOutput({ imageArray: predictionStream, threshold: 0.1 });
 
-const heatmapy = new heatmap({ imageArray: exampleImage, width: 100, height: 100 });
+const heatmapy = heatmap({ imageArray: predictionStream, width: 100, height: 100 });
 
 const sliderComponent = new Slider({
   min: 0,
@@ -36,42 +128,16 @@ const sliderComponent = new Slider({
   step: 0.01,
   initialValue: 0.5,
   onChange: (val) => {
-    console.log("Slider value:", val);
     imageComponent.updateThreshold(val);
   },
 });
 
-const contrastSliderComponent = new ContrastSlider({
-    min: 0,
-    max: 2,
-    step: 0.01,
-    initialValue: 1,
-    onChange: (val) => {
-      console.log("Contrast value:", val);
-      org_img.updateContrast(val); 
-    },
-  });
-  
-  const brightnessSliderComponent = new BrightnessSlider({
-    min: 0.2,
-    max: 1.2,
-    step: 0.01,
-    initialValue: 0.7,
-    onChange: (val) => {
-      console.log("Brightness value:", val);
-      org_img.updateBrightness(val); 
-    },
-  });
-
-  const brushComponent = new brush(upload.$images);
-
 const dash = dashboard({
-  title: 'PET Scan Segmentation',
+  title: 'My Marcelle App!',
   author: 'Marcelle Doe'
 });
 
-dash.page('Upload').use(upload_text, [org_img, contrastSliderComponent, brightnessSliderComponent], brushComponent).sidebar(upload);
-dash.page('Prediction').use(prediction_text, [imageComponent, sliderComponent]);
+dash.page('Welcome').use(x, sliderComponent, imageComponent).sidebar(upload, org_img, pred_img);
 dash.page('Heatmap').use(heatmapy);
 
 dash.show();
