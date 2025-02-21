@@ -247,7 +247,7 @@ const dash = dashboard({
   author: 'Stevie Wonder'
 });
   
-dash.page('Welcome').use( [pred_img, brushComponent], [sliderComponent], [imageComponent,heatmapy,labelDisplay]).sidebar(upload, test_img,brightnessSliderComponent, contrastSliderComponent);
+dash.page('Welcome').use( [pred_img,imageComponent,heatmapy], [sliderComponent], [brushComponent,labelDisplay]).sidebar(upload, test_img,brightnessSliderComponent, contrastSliderComponent);
 //dash.page('Heatmap').use(heatmapy);
 
 dash.show();
