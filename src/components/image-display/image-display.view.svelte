@@ -88,8 +88,9 @@
   }
 </script>
 
+
 <ViewContainer {title}>
-  <canvas bind:this={canvas} class="w-full max-w-full" />
+  <canvas bind:this={canvas} style="border: 1px solid white;"></canvas>
 </ViewContainer>
 
 <style>

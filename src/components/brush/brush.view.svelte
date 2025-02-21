@@ -1,10 +1,7 @@
-<svelte:options accessors />
-
 <script lang="ts">
   import { onDestroy, onMount, tick, createEventDispatcher } from 'svelte';
   import { Stream } from '@marcellejs/core';
-  import { ViewContainer } from '@marcellejs/design-system';
-  import { Button } from '@marcellejs/design-system';
+  import { ViewContainer, Button } from '@marcellejs/design-system';
 
   export let title: string;
   export let strokeStart: any;
@@ -22,7 +19,7 @@
 
   const dispatch = createEventDispatcher();
 
-    function noop() {
+  function noop() {
     // Do nothing
   }
 
@@ -69,25 +66,31 @@
     isDrawing = false;
   }
 
+  function captureDrawing() {
+    const label = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+    console.log("Capturing drawing, dispatching 'labelCaptured' event.");
+    dispatch('labelCaptured', { label });
+  }
+
+  function retrainModel() {
+    const label = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+    const orig_image = imageCtx.getImageData(0,0, imageCanvas.width, imageCanvas.height)
+    console.log("Retrain button clicked. Dispatching 'retrain' event with image:", orig_image);
+    dispatch('retrain', { label , orig_image});
+  }
+
   onMount(async () => {
     await tick();
     await tick(); // Ensures the DOM is fully rendered
     
-    // Set up the canvases once they are bound
     imageCtx = imageCanvas.getContext('2d');
     console.log('imageCanvas context initialized:', imageCtx);
     drawCtx = drawCanvas.getContext('2d');
     console.log('drawCanvas context initialized:', drawCtx);
 
-    
-
-    // Listen for the imageStream updates
     unSub = imageStream.subscribe((img: ImageData | ImageData[]) => {
-
       if (Array.isArray(img) && img.length === 0) return;
       if (img instanceof ImageData) {
-        
-        // Set the imageCanvas size based on the image's original size
         imageCanvas.width = img.width;
         imageCanvas.height = img.height;
 
@@ -104,7 +107,8 @@
 
     dispatch('canvasElement', drawCanvas);
   });
-   onDestroy(() => {
+
+  onDestroy(() => {
     console.log('Brush Component destroyed, unsubscribing from image stream');
     unSub();
   });
@@ -130,16 +134,24 @@
     />
     
     <div class="m-1 z-3">
-      <Button size="small" type="danger" on:click={() => clearDrawing(drawCanvas, drawCtx)}>Clear Drawing Canvas</Button>
+      <Button size="small" type="danger" on:click={() => clearDrawing(drawCanvas, drawCtx)}>
+        Clear Drawing Canvas
+      </Button>
+      <Button size="small" type="primary" on:click={captureDrawing}>
+        Capture Drawing
+      </Button>
+      <Button size="small" type="success" on:click={retrainModel}>
+        Retrain
+      </Button>
     </div>
   </div>
 </ViewContainer>
 
 <style>
-  .slider-container {
-    margin-bottom: 1rem;
-  }
-  input[type="range"] {
-    width: 100%;
+  .relative { position: relative; }
+  .absolute { position: absolute; }
+  .z-3 { z-index: 3; }
+  canvas {
+    display: block;
   }
 </style>

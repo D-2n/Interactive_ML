@@ -1,90 +1,99 @@
-import { Component } from '@marcellejs/core';
-import View from './brush.view.svelte';
-import { Stream } from '@marcellejs/core';
-import { never } from '@most/core';
+import { Component, Stream } from '@marcellejs/core';
+import BrushView from './brush.view.svelte';
 
 export class Brush extends Component {
-  #thumbnailCanvas;
-  #thumbnailCanvasWidth;
-  #thumbnailCanvasHeight;
-  #thumbnailCtx;
   #sketchCtx;
-  #drawCanvas;  // New drawing canvas
-  #drawCtx;     // Drawing context for the new canvas
-  sketchElement;
+  #thumbnailCanvas;
+  #thumbnailCtx;
+  #thumbnailCanvasWidth = 100;
+  #thumbnailCanvasHeight = 100;
+  
+  // Cache event listeners if $$.app isn't available yet.
+  _cachedEvents = [];
 
   constructor(imageStream) {
     super();
-    this.title = 'brush';
-
-    // Initialize streams
+    this.title = 'Brush window';
     this.imageStream = imageStream;
-    this.$images = new Stream(never());  // Stream for the full image
-    this.$thumbnails = new Stream(never());  // Stream for the thumbnail
-    this.$strokeStart = new Stream(never());
-    this.$strokeEnd = new Stream(never());
+    this.$images = new Stream();
+    this.$thumbnails = new Stream();
+    this.$strokeStart = new Stream();
+    this.$strokeEnd = new Stream();
 
-    // Initialize properties for the sketch
-    this.#thumbnailCanvas = document.createElement('canvas');
-    this.#thumbnailCanvasWidth = imageStream.width;
-    this.#thumbnailCanvasHeight = imageStream.height;
-    this.#thumbnailCtx = this.#thumbnailCanvas.getContext('2d');
-
-    // Set up the new drawing canvas
-    this.#drawCanvas = document.createElement('canvas');
-    this.#drawCanvas.width = this.#thumbnailCanvasWidth;
-    this.#drawCanvas.height = this.#thumbnailCanvasHeight;
-    this.#drawCtx = this.#drawCanvas.getContext('2d');
+    this.sketchElement = null;
 
     this.setupCapture();
 
-    // Subscribe to the strokeEnd stream to capture the image
+    // Subscribe to strokeEnd stream to capture the image.
     this.$strokeEnd.subscribe(() => {
       this.capture();
     });
-    this.start();  // Assuming start is defined elsewhere
+
+    this.start(); // Assuming start is defined elsewhere.
   }
 
-  // Mount the component into a target element
   mount(target) {
     const t = target || document.querySelector(`#${this.id}`);
-    if (!t) return;
-    this.destroy();
-    this.$$.app = new View({
+    if (!t) {
+      console.error("No valid target for Brush mount.");
+      this.destroy();
+      return;
+    }
+    this.$$.app = new BrushView({
       target: t,
       props: {
         title: this.title,
         strokeStart: this.$strokeStart,
         strokeEnd: this.$strokeEnd,
-        imageStream: this.imageStream,  // Passing image stream to the View component
+        imageStream: this.imageStream,
       },
     });
-
-    // Listen for the 'canvasElement' event from the View component
+    // Listen for the canvasElement event from the view.
     this.$$.app.$on('canvasElement', (e) => {
       this.sketchElement = e.detail;
       this.#sketchCtx = this.sketchElement.getContext('2d');
     });
+    // Now flush cached event listeners.
+    this._cachedEvents.forEach(({ event, callback }) => {
+      console.log("Attaching cached event listener for", event);
+      this.$$.app.$on(event, callback);
+    });
+    this._cachedEvents = [];
   }
 
-  // Set up the capture mechanism for thumbnails and full images
+  // Proxy $on method: if the view isn't mounted, cache the event.
+  $on(event, callback) {
+    if (this.$$.app && typeof this.$$.app.$on === 'function') {
+      console.log("Attaching event listener for", event);
+      return this.$$.app.$on(event, callback);
+    } else {
+      console.warn("Brush component not mounted yet; caching event:", event);
+      this._cachedEvents.push({ event, callback });
+    }
+  }
+
   setupCapture() {
-    // Initialize properties for capturing the image
     this.#thumbnailCanvas = document.createElement('canvas');
     this.#thumbnailCanvas.width = this.#thumbnailCanvasWidth;
     this.#thumbnailCanvas.height = this.#thumbnailCanvasHeight;
     this.#thumbnailCtx = this.#thumbnailCanvas.getContext('2d');
   }
 
-  // Capture both the thumbnail and full image data
   capture() {
-    const t = this.captureThumbnail();
-    this.$thumbnails.set(t);  // Set thumbnail in the stream
-    this.$images.set(this.captureImage());  // Set full image in the stream
+    if (!this.sketchElement) {
+      console.error('sketchElement is not initialized');
+      return;
+    }
+    const thumb = this.captureThumbnail();
+    this.$thumbnails.set(thumb);
+    this.$images.set(this.captureImage());
   }
 
-  // Capture the thumbnail from the sketch
   captureThumbnail() {
+    if (!this.sketchElement) {
+      console.error('sketchElement is not initialized');
+      return;
+    }
     this.#thumbnailCtx.drawImage(
       this.sketchElement,
       0,
@@ -95,28 +104,18 @@ export class Brush extends Component {
     return this.#thumbnailCanvas.toDataURL('image/jpeg');
   }
 
-  // Capture the full image from the sketch
   captureImage() {
+    if (!this.sketchElement) {
+      console.error('sketchElement is not initialized');
+      return;
+    }
     return this.#sketchCtx.getImageData(0, 0, this.sketchElement.width, this.sketchElement.height);
   }
 
-  // New method to draw on the new #drawCanvas
-  startDrawingOnDrawCanvas(e) {
-    // For example, handle mouse events for drawing
-    const rect = this.#drawCanvas.getBoundingClientRect();
-    const offset = {
-      left: rect.left + window.scrollX,
-      top: rect.top + window.scrollY
-    };
-
-    const x = e.clientX - offset.left;
-    const y = e.clientY - offset.top;
-    this.#drawCtx.beginPath();
-    this.#drawCtx.moveTo(x, y);
-    this.#drawCtx.strokeStyle = 'red';
-    this.#drawCtx.lineWidth = 4;
-    this.#drawCtx.lineJoin = 'round';
-    this.#drawCtx.closePath();
-    this.#drawCtx.stroke();
+  destroy() {
+    if (this.$$.app) {
+      this.$$.app.$destroy();
+      this.$$.app = null;
+    }
   }
 }

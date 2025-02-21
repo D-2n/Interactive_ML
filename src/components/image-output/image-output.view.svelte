@@ -88,7 +88,7 @@
 </script>
 
 <ViewContainer {title}>
-  <canvas bind:this={canvas} style="border: 1px solid black;"></canvas>
+  <canvas bind:this={canvas} style="border: 1px solid white;"></canvas>
 </ViewContainer>
 
 <style>
