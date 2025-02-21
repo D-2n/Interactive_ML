@@ -1,15 +1,20 @@
 import '@marcellejs/core/dist/marcelle.css';
 import { dashboard, text, imageUpload, imageDisplay, tfjsModel } from '@marcellejs/core';
 import { Slider } from './components';
+import { ContrastSlider } from './components/contrastslider';
+import { BrightnessSlider } from './components/brightnessslider';
 import { imageOutput } from './components/image-output';
 import { heatmap } from './components/heatmap';
-// import { imageDisplay } from './components/image-display';
+import { ScanDisplay } from './components/image-display';
+import { brush } from './components/brush';
 import * as tf from '@tensorflow/tfjs'; 
 
 const upload = imageUpload();
 let imageArray = [];
 const exampleImage = new Array(10000).fill(0).map(() => Math.random( ));
+const test_img = ScanDisplay(upload.$images);
 
+console.log('Test image:', test_img);
 const unet = tfjsModel({
   inputType: 'generic',
   taskType: 'segmentation',
@@ -86,7 +91,7 @@ const toGrayscale = (image) => {
 };
 
 
-const predictionStream = upload.$images.map(async (image) => {
+const predictionStream = test_img.images.map(async (image) => {
   const grayscaleImage = toGrayscale(image);
   const normalizedImage = grayscaleImage.div(255); 
   const resizedImage = tf.image.resizeBilinear(normalizedImage, [256, 256]);
@@ -108,6 +113,7 @@ const predictionStream = upload.$images.map(async (image) => {
 
 const org_img = imageDisplay(upload.$images);
 const pred_img = imageDisplay(predictionStream);
+const adjustedUpload = imageDisplay(upload.$images);
 
 function imageDataToNormalizedGrayscale(imageData) {
   const { data, width, height } = imageData;
@@ -142,12 +148,35 @@ const sliderComponent = new Slider({
   },
 });
 
+const contrastSliderComponent = new ContrastSlider({
+    min: 0,
+    max: 2,
+    step: 0.01,
+    initialValue: 1,
+    onChange: (val) => {
+      console.log("Contrast value:", val);
+      test_img.updateContrast(val); 
+    },
+  });
+  
+  const brightnessSliderComponent = new BrightnessSlider({
+    min: 0.2,
+    max: 1.2,
+    step: 0.01,
+    initialValue: 0.7,
+    onChange: (val) => {
+      console.log("Brightness value:", val);
+      test_img.updateBrightness(val); 
+    },
+  });
+
+
 const dash = dashboard({
   title: 'Tumor Segmentation Platform',
   author: 'Stevie Wonder'
 });
 
-dash.page('Welcome').use( sliderComponent, imageComponent,heatmapy).sidebar(upload, org_img, pred_img);
+dash.page('Welcome').use( [pred_img, test_img], [sliderComponent, brightnessSliderComponent, contrastSliderComponent], [imageComponent,heatmapy]).sidebar(upload, org_img);
 //dash.page('Heatmap').use(heatmapy);
 
 dash.show();

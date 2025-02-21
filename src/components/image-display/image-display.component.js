@@ -1,10 +1,13 @@
 import { Component } from '@marcellejs/core';
 import View from './image-display.view.svelte';
+import { Stream } from '@marcellejs/core';
+import { never } from '@most/core';
 
 export class scanDisplay extends Component {
   constructor(imageStream, brightness = 1, contrast = 1) {
     super();
     this.title = 'image display';
+    this.images = new Stream(never());
     this.imageStream = imageStream;
     this.brightness = brightness;
     this.contrast = contrast;
@@ -19,6 +22,7 @@ export class scanDisplay extends Component {
       props: {
         title: this.title,
         imageStream: this.imageStream,
+        images: this.images,
         brightness: this.brightness,
         contrast: this.contrast,
       },

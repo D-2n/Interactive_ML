@@ -9,7 +9,7 @@
   export let imageStream: Stream<ImageData> | Stream<ImageData[]>;
   export let brightness: number = 1; // External brightness value
   export let contrast: number = 1; // External contrast value
-
+  export let images: Stream<ImageData> | Stream<ImageData[]>;
   let canvas: HTMLCanvasElement;
 
   function noop() {
@@ -47,6 +47,8 @@
       const ctx = canvas.getContext('2d');
       const adjustedImageData = applyBrightnessContrast(currentImage, brightness, contrast);
       ctx.putImageData(adjustedImageData, 0, 0); // Use putImageData instead of drawImage
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);  // Use the canvas width/height
+      images.set(imgData);
     }
   }
 
