@@ -5,11 +5,10 @@ import { imageOutput } from './components/image-output';
 import { heatmap } from './components/heatmap';
 // import { imageDisplay } from './components/image-display';
 import * as tf from '@tensorflow/tfjs'; 
-const x = text('hello :3');
 
 const upload = imageUpload();
 let imageArray = [];
-const exampleImage = new Array(100000).fill(0).map(() => Math.random());
+const exampleImage = new Array(10000).fill(0).map(() => Math.random( ));
 
 const unet = tfjsModel({
   inputType: 'generic',
@@ -71,7 +70,7 @@ const tensorToImageData = async (tensor) => {
 
 const toGrayscale = (image) => {
   return tf.tidy(() => {
-    console.log('Image type:', image.constructor.name); // Log the image type
+    console.log('Image type:', image.constructor.name);
     let tensor;
     if (image instanceof tf.Tensor) {
       tensor = image;
@@ -88,39 +87,50 @@ const toGrayscale = (image) => {
 
 
 const predictionStream = upload.$images.map(async (image) => {
-  //const resizedImage = resizeImage(image);
   const grayscaleImage = toGrayscale(image);
-  const normalizedImage = grayscaleImage.div(255); // Normalize the tensor values to [0, 1]
+  const normalizedImage = grayscaleImage.div(255); 
   const resizedImage = tf.image.resizeBilinear(normalizedImage, [256, 256]);
-  // Ensure the tensor has the correct shape [1, 256, 256, 1]
-  //const reshapedImage = normalizedImage.reshape([1, 256, 256, 1]);
  
-  //const imageData = await tensorToImageData(normalizedImage);
-  let prediction = null;
+  let predictionData = null;
   try{
-    prediction = await unet.predict(resizedImage.arraySync());
+    predictionData = await unet.predict(resizedImage.arraySync()); 
   }
   catch(err){
     console.log('Unet is being a baby: ', err);
   }
   grayscaleImage.dispose();
   normalizedImage.dispose();
-  //reshapedImage.dispose();
-  return prediction;
+  resizedImage.dispose();
+  return predictionData;
 }).awaitPromises();
 
 
 
-//const predictionStream = upload.$images.map(unet.predict).awaitPromises();
-//const org_img = new imageDisplay({ imageArray});
 const org_img = imageDisplay(upload.$images);
 const pred_img = imageDisplay(predictionStream);
 
-  
+function imageDataToNormalizedGrayscale(imageData) {
+  const { data, width, height } = imageData;
+  const flatArray = new Array(width * height);
+  for (let i = 0; i < width * height; i++) {
+    // Since the image is grayscale, we can take the red channel.
+    flatArray[i] = data[i * 4] / 255;
+  }
+  return Array(flatArray);
+}
 
-const imageComponent =  imageOutput({ imageArray: predictionStream, threshold: 0.1 });
+const flatPredictionStream = predictionStream.map((prediction) => {
+  try {
+    console.log('normalizing');
+    return imageDataToNormalizedGrayscale(prediction);
+  } catch (err) {
+    console.error("Error converting prediction to grayscale array:", err);
+    return [];
+  }
+});
+const imageComponent = imageOutput({ imageArray: predictionStream, threshold: 0.5, contrast: 1, brightness: 1 });
 
-const heatmapy = heatmap({ imageArray: predictionStream, width: 100, height: 100 });
+const heatmapy = heatmap({ imageArray: predictionStream});
 
 const sliderComponent = new Slider({
   min: 0,
@@ -133,11 +143,11 @@ const sliderComponent = new Slider({
 });
 
 const dash = dashboard({
-  title: 'My Marcelle App!',
-  author: 'Marcelle Doe'
+  title: 'Tumor Segmentation Platform',
+  author: 'Stevie Wonder'
 });
 
-dash.page('Welcome').use(x, sliderComponent, imageComponent).sidebar(upload, org_img, pred_img);
-dash.page('Heatmap').use(heatmapy);
+dash.page('Welcome').use( sliderComponent, imageComponent,heatmapy).sidebar(upload, org_img, pred_img);
+//dash.page('Heatmap').use(heatmapy);
 
 dash.show();
