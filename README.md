@@ -1,4 +1,6 @@
 # Interacting with AI Tumor Segmentation
+[Watch the demo video](https://youtu.be/05ca3oepKWk)
+
 
 Artificial Intelligence (AI) is increasingly being utilized in the medical field, particularly in assisting with diagnostic predictions. However, just like humans, AI is prone to errors—it may mistakenly classify a healthy individual as sick or, even more critically, fail to detect illness in a patient who requires urgent care. In the medical domain, AI is not intended to replace healthcare professionals but rather to serve as an assistive tool, working alongside doctors to enhance decision-making. We propose an application for automatic tumor segmentation in PET scans, allowing medical professionals to interact with the model and refine its performance over time.
 > This project is developed as a [Marcelle](https://marcelle.dev) Application
