@@ -3,7 +3,7 @@
 
 
 Artificial Intelligence (AI) is increasingly being utilized in the medical field, particularly in assisting with diagnostic predictions. However, just like humans, AI is prone to errors—it may mistakenly classify a healthy individual as sick or, even more critically, fail to detect illness in a patient who requires urgent care. In the medical domain, AI is not intended to replace healthcare professionals but rather to serve as an assistive tool, working alongside doctors to enhance decision-making. We propose an application for automatic tumor segmentation in PET scans, allowing medical professionals to interact with the model and refine its performance over time.
-> This project is developed as a [Marcelle](https://marcelle.dev) Application
+> This project is developed as a [Marcelle](https://marcelle.dev) Application 
 
 ## Scenario
 PET scans detect areas in the body with high glucose concentration, as tumors exhibit rapid growth and require increased sugar intake, making them highly visible on these scans. However, certain organs, such as the brain, naturally exhibit high glucose uptake and will also appear prominently on PET images. Additionally, various patient-related factors can lead to glucose-dense areas, including insufficient fasting, recent chemotherapy, colonic activity, or even exposure to cold temperatures during the scan. Our goal is to develop an automated segmentation system capable of distinguishing between these cases, with continuous input and validation from medical experts to improve its accuracy.
